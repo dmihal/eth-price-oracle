@@ -1,0 +1,10 @@
+{
+  "name": "exchange-rate",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "David Mihal <david@dmihal.com>",
+  "license": "MIT",
+  "dependencies": {
+    "node-fetch": "^2.3.0"
+  }
+}
