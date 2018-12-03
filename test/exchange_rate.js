@@ -13,6 +13,7 @@ contract('ExchangeRate', ([owner, account1]) => {
     const contract = await ExchangeRate.new(weiPerCent);
 
     assert.equal(await contract.getExchangeRateInUSD(), 360);
+    assert.closeTo((await contract.lastUpdated()).toNumber(), (new Date()).getTime() / 1000, 1000);
 
     const expectedWei = weiPerCent.mul(web3.utils.toBN(1000)).toString();
     assert.equal(await contract.getValueFromDollars(10), expectedWei);
@@ -31,6 +32,7 @@ contract('ExchangeRate', ([owner, account1]) => {
 
     await contract.setExchangeRate(newWeiPerCent);
     assert.equal(await contract.getExchangeRateInUSD(), 300);
+    assert.closeTo((await contract.lastUpdated()).toNumber(), (new Date()).getTime() / 1000, 1000);
   });
 
   it("should not allow other users to change the exchange rate", async () => {

@@ -10,12 +10,15 @@ contract ExchangeRate is Ownable, IEthPrice {
   uint256 constant ETHER_DIV_100 = 10 finney;
 
   uint256 private weiPerCent;
+  uint256 public lastUpdated;
 
   constructor(uint256 _exchangeRate) {
     weiPerCent = _exchangeRate;
+    lastUpdated = now;
   }
 
   function setExchangeRate(uint256 newExchangeRate) public onlyOwner {
+    lastUpdated = now;
     weiPerCent = newExchangeRate;
   }
 
