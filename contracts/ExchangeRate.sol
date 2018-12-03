@@ -1,9 +1,10 @@
 pragma solidity ^0.4.23;
 
+import './IEthPrice.sol';
 import './Ownable.sol';
 import './SafeMath.sol';
 
-contract ExchangeRate is Ownable {
+contract ExchangeRate is Ownable, IEthPrice {
   using SafeMath for uint256;
 
   uint256 constant ETHER_DIV_100 = 10 finney;
