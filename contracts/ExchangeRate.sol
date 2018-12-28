@@ -12,12 +12,14 @@ contract ExchangeRate is Ownable, IEthPrice {
   uint256 private weiPerCent;
   uint256 public lastUpdated;
 
-  constructor(uint256 _exchangeRate) {
+  constructor(uint256 _exchangeRate) public {
+    require(_exchangeRate > 0);
     weiPerCent = _exchangeRate;
     lastUpdated = now;
   }
 
   function setExchangeRate(uint256 newExchangeRate, uint256 _lastUpdated) public onlyOwner {
+    require(newExchangeRate > 0);
     require(_lastUpdated > lastUpdated && _lastUpdated < now);
     lastUpdated = _lastUpdated;
     weiPerCent = newExchangeRate;
