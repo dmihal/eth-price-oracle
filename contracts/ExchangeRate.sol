@@ -50,6 +50,12 @@ contract ExchangeRate is Ownable, IEthPrice {
     return ExchangeRate(delegate).lastUpdated();
   }
 
+  function() public payable {}
+
+  function withdraw() public onlyOwner {
+    owner().transfer(address(this).balance);
+  }
+
   function setDelegate(address newDelegate) public onlyOwner {
     delegate = newDelegate;
   }

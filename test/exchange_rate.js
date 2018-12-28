@@ -97,6 +97,34 @@ contract('ExchangeRate', ([owner, account1, account2]) => {
       throw new Error('Should not allow delegate to be changed');
     }, ignoreErrors);
   });
+
+  it("should allow ether to be donated and withdrawn", async () => {
+    const weiPerCent = usdToWeiPerCent(360);
+    const contract = await ExchangeRate.new(weiPerCent);
+
+    await web3.eth.sendTransaction({
+      from: account1,
+      value: web3.utils.toWei('0.1', 'ether'),
+      to: contract.address,
+    });
+
+    await contract.withdraw();
+  });
+
+  it("shouldn't allow random users to withdraw", async () => {
+    const weiPerCent = usdToWeiPerCent(360);
+    const contract = await ExchangeRate.new(weiPerCent);
+
+    await web3.eth.sendTransaction({
+      from: account1,
+      value: web3.utils.toWei('0.1', 'ether'),
+      to: contract.address,
+    });
+
+    await contract.withdraw({ from: account2 }).then(() => {
+      throw new Error('Should not allow withdraw');
+    }, ignoreErrors);
+  });
 });
 /*
 1000000000000000000
