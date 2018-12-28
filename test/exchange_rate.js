@@ -7,7 +7,7 @@ const wait = sec => new Promise(resolve => setTimeout(resolve, sec * 1000));
 const getTimestamp = () => (new Date() / 1000)|0;
 const usdToWeiPerCent = usd => web3.utils.toBN(WEI).div(web3.utils.toBN(usd * 100))
 
-contract('ExchangeRate', ([owner, account1]) => {
+contract('ExchangeRate', ([owner, account1, account2]) => {
   it("should construct the contract correctly", async () => {
     const weiPerCent = usdToWeiPerCent(360);
     const contract = await ExchangeRate.new(weiPerCent);
@@ -60,17 +60,41 @@ contract('ExchangeRate', ([owner, account1]) => {
   });
 
   it("shouldn't allow changing the rate to a future price", async () => {
-    const usdExchangeRate = 360;
-    const weiPerCent = web3.utils.toBN(WEI).div(web3.utils.toBN(usdExchangeRate * 100));
-
+    const weiPerCent = usdToWeiPerCent(360);
     const contract = await ExchangeRate.new(weiPerCent);
-    assert.equal(await contract.getExchangeRateInUSD(), 360);
 
-    const newExchangeRate = 300;
-    const newWeiPerCent = web3.utils.toBN(WEI).div(web3.utils.toBN(newExchangeRate * 100));
+    const newWeiPerCent = usdToWeiPerCent(300);
 
     await contract.setExchangeRate(newWeiPerCent, getTimestamp() + 100).then(() => {
       throw new Error('Should not allow changing to a timestamp in the future');
+    }, ignoreErrors);
+  });
+
+  it("should allow the exchange rate to be delegated to a different contract", async () => {
+    const weiPerCentA = usdToWeiPerCent(360);
+    const contractA = await ExchangeRate.new(weiPerCentA);
+
+    const weiPerCentB = usdToWeiPerCent(380);
+    const contractB = await ExchangeRate.new(weiPerCentB);
+
+    await wait(2);
+
+    const newPriceB = usdToWeiPerCent(340);
+    const timestamp = getTimestamp();
+    await contractB.setExchangeRate(newPriceB, timestamp);
+
+    await contractA.setDelegate(contractB.address);
+
+    assert.equal(await contractA.getExchangeRateInUSD(), 340);
+    assert.equal(await contractA.lastUpdated(), timestamp);
+  });
+
+  it("should not allow other users to set the delegate", async () => {
+    const weiPerCent = usdToWeiPerCent(360);
+    const contract = await ExchangeRate.new(weiPerCent);
+
+    await contract.setDelegate(account2, { from: account1 }).then(() => {
+      throw new Error('Should not allow delegate to be changed');
     }, ignoreErrors);
   });
 });
