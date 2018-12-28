@@ -3,6 +3,8 @@ const ExchangeRate = artifacts.require('./ExchangeRate.sol');
 const WEI = '1000000000000000000';
 
 const ignoreErrors = () => null;
+const wait = sec => new Promise(resolve => setTimeout(resolve, sec * 1000));
+const getTimestamp = () => (new Date() / 1000)|0;
 
 contract('ExchangeRate', ([owner, account1]) => {
   it("should construct the contract correctly", async () => {
@@ -27,18 +29,21 @@ contract('ExchangeRate', ([owner, account1]) => {
     const contract = await ExchangeRate.new(weiPerCent);
     assert.equal(await contract.getExchangeRateInUSD(), 360);
 
+    await wait(1);
+
     const newExchangeRate = 300;
     const newWeiPerCent = web3.utils.toBN(WEI).div(web3.utils.toBN(newExchangeRate * 100));
+    const timestamp = getTimestamp();
 
-    await contract.setExchangeRate(newWeiPerCent);
+    await contract.setExchangeRate(newWeiPerCent, timestamp);
     assert.equal(await contract.getExchangeRateInUSD(), 300);
-    assert.closeTo((await contract.lastUpdated()).toNumber(), (new Date()).getTime() / 1000, 1000);
+    assert.equal(await contract.lastUpdated(), timestamp);
   });
 
   it("should not allow other users to change the exchange rate", async () => {
     const usdExchangeRate = 360;
     const weiPerCent = web3.utils.toBN(WEI).div(web3.utils.toBN(usdExchangeRate * 100));
-    
+
     const contract = await ExchangeRate.new(weiPerCent);
     assert.equal(await contract.getExchangeRateInUSD(), 360);
 
@@ -50,8 +55,35 @@ contract('ExchangeRate', ([owner, account1]) => {
     }, ignoreErrors);
   });
 
-  it("shouldn't allow changing the rate to a past price");
-  it("shouldn't allow changing the rate to a future price");
+  it("shouldn't allow changing the rate to a past price", async () => {
+    const usdExchangeRate = 360;
+    const weiPerCent = web3.utils.toBN(WEI).div(web3.utils.toBN(usdExchangeRate * 100));
+
+    const contract = await ExchangeRate.new(weiPerCent);
+    assert.equal(await contract.getExchangeRateInUSD(), 360);
+
+    const newExchangeRate = 300;
+    const newWeiPerCent = web3.utils.toBN(WEI).div(web3.utils.toBN(newExchangeRate * 100));
+
+    await contract.setExchangeRate(newWeiPerCent, getTimestamp() - 10).then(() => {
+      throw new Error('Should not allow changing to a timestamp before the current price');
+    }, ignoreErrors);
+  });
+
+  it("shouldn't allow changing the rate to a future price", async () => {
+    const usdExchangeRate = 360;
+    const weiPerCent = web3.utils.toBN(WEI).div(web3.utils.toBN(usdExchangeRate * 100));
+
+    const contract = await ExchangeRate.new(weiPerCent);
+    assert.equal(await contract.getExchangeRateInUSD(), 360);
+
+    const newExchangeRate = 300;
+    const newWeiPerCent = web3.utils.toBN(WEI).div(web3.utils.toBN(newExchangeRate * 100));
+
+    await contract.setExchangeRate(newWeiPerCent, getTimestamp() + 100).then(() => {
+      throw new Error('Should not allow changing to a timestamp in the future');
+    }, ignoreErrors);
+  });
 });
 /*
 1000000000000000000
