@@ -1,4 +1,15 @@
 const fetch = require('node-fetch');
+const contract = require('truffle-contract');
+const Web3 = require('web3');
+
+const ExchangeRateBuild = require('../build/ExchangeRate.json');
+
+const config = require('../truffle-config');
+
+const ExchangeRate = contract(ExchangeRateBuild);
+ExchangeRate.setProvider(config.networks.kovan.provider);
+
+const web3 = new Web3();
 
 let storedRate = 0;
 let lastUpdate = new Date(0);
@@ -13,17 +24,22 @@ function getThreshold() {
 }
 
 async function updateExchangeRate() {
-  console.log('=== Starting update-exchange-rate ===');
-
   const response = await fetch('https://api.coinmarketcap.com/v1/ticker/ethereum/');
   const data = await response.json();
   const currentRate = parseFloat(data[0].price_usd);
+  const timestamp = data[0].last_updated;
 
-  const difference = percentDiff(currentRate, storedRate);
-  const threshold = getThreshold();
+  const contract = await ExchangeRate.deployed();
+  const [storedRateInCents, lastUpdated] = await Promise.all([
+    contract.getExchangeRateInCents(),
+    contract.lastUpdated();
+  ]);
+
+  const difference = percentDiff(currentRate * 100, storedRateInCents);
+  const threshold = getThreshold(timestamp, lastUpdated);
 
   if (difference > threshold) {
-    setExchangeRate(currentRate);
+    contract.setExchangeRate(timestamp);
   } else {
     console.log(`Skipping, $${currentRate} is ${difference}%, less than ${threshold}`)
   }

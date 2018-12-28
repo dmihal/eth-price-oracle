@@ -49,6 +49,9 @@ contract('ExchangeRate', ([owner, account1]) => {
       throw new Error('Should not allow exchange rate to be changed');
     }, ignoreErrors);
   });
+
+  it("shouldn't allow changing the rate to a past price");
+  it("shouldn't allow changing the rate to a future price");
 });
 /*
 1000000000000000000

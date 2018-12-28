@@ -1,5 +1,5 @@
-var Migrations = artifacts.require("./Migrations.sol");
+var ExchangeRate = artifacts.require("./ExchangeRate.sol");
 
 module.exports = function(deployer) {
-  deployer.deploy(Migrations);
+  deployer.deploy(ExchangeRate, 0);
 };

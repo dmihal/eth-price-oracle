@@ -5,6 +5,9 @@
   "author": "David Mihal <david@dmihal.com>",
   "license": "MIT",
   "dependencies": {
-    "node-fetch": "^2.3.0"
+    "dotenv": "^6.1.0",
+    "node-fetch": "^2.3.0",
+    "truffle-hdwallet-provider": "^1.0.0-web3one.1",
+    "truffle-privatekey-provider": "^1.0.0"
   }
 }

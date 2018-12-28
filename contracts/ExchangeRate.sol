@@ -17,8 +17,9 @@ contract ExchangeRate is Ownable, IEthPrice {
     lastUpdated = now;
   }
 
-  function setExchangeRate(uint256 newExchangeRate) public onlyOwner {
-    lastUpdated = now;
+  function setExchangeRate(uint256 newExchangeRate, uint256 _lastUpdated) public onlyOwner {
+    require(_lastUpdated > lastUpdated && _lastUpdated < now);
+    lastUpdated = _lastUpdated;
     weiPerCent = newExchangeRate;
   }
 
