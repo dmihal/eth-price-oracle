@@ -125,6 +125,13 @@ contract('ExchangeRate', ([owner, account1, account2]) => {
       throw new Error('Should not allow withdraw');
     }, ignoreErrors);
   });
+
+  it("should round to the nearest dollar", async () => {
+    const weiPerCent = usdToWeiPerCent(360.5);
+    const contract = await ExchangeRate.new(weiPerCent);
+
+    assert.equal(await contract.getExchangeRateInUSD(), 361);
+  });
 });
 /*
 1000000000000000000

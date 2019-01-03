@@ -28,7 +28,7 @@ contract ExchangeRate is Ownable, IEthPrice {
   }
 
   function getExchangeRateInUSD() public view returns (uint256) {
-    return ETHER_DIV_100 / getWeiPerCent();
+    return ((1 ether / getWeiPerCent()) + 50) / 100;
   }
 
   function getExchangeRateInCents() public view returns (uint256) {
