@@ -31,6 +31,8 @@ async function updateExchangeRate() {
   const currentRate = parseFloat(data[0].price_usd);
   const timestamp = data[0].last_updated;
 
+  console.log(`=== $${currentRate} ===`);
+
   for (contract of contracts) {
     try {
       await updateOnNetwork(contract, currentRate, timestamp);
@@ -64,7 +66,7 @@ async function updateOnNetwork(contractBuild, currentRate, timestamp) {
     });
     console.log(`TX ${receipt.transactionHash} (block ${receipt.blockNumber})`);
   } else {
-    console.log(`Skipping, $${currentRate} is ${difference}%, less than ${threshold}`)
+    console.log(`Skipping, $${storedRateInCents / 100} is ${difference}%, less than ${threshold}%`)
   }
 }
 
