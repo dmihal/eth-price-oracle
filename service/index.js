@@ -1,5 +1,5 @@
 const fetch = require('node-fetch');
-const contract = require('truffle-contract');
+const truffleContract = require('truffle-contract');
 const Web3 = require('web3');
 
 const ExchangeRateBuild = require('../build/contracts/ExchangeRate.json');
@@ -8,14 +8,14 @@ const config = require('../truffle-config');
 
 const WEI = '1000000000000000000';
 
-const ExchangeRate = contract(ExchangeRateBuild);
-
-const providers = Object.entries(config.networks)
+const contracts = Object.entries(config.networks)
   .filter(([name, network]) => !network.develop)
   .map(([name, network]) => {
     const provider = network.provider();
-    provider.name = name;
-    return provider;
+    const contract = truffleContract(ExchangeRateBuild);
+    contract.chain = name;
+    contract.web3 = new Web3(provider);
+    return contract;
   });
 
 const web3 = new Web3();
@@ -31,19 +31,18 @@ async function updateExchangeRate() {
   const currentRate = parseFloat(data[0].price_usd);
   const timestamp = data[0].last_updated;
 
-  for (provider of providers) {
+  for (contract of contracts) {
     try {
-      await updateOnNetwork(provider, currentRate, timestamp);
+      await updateOnNetwork(contract, currentRate, timestamp);
     } catch (e) {
-      console.error(`Error running update on network ${provider.name}`, e);
+      console.error(`Error running update on network ${contract.chain}`, e);
     }
   }
 }
 
-async function updateOnNetwork(provider, currentRate, timestamp) {
-  console.log(`[${provider.name}]`)
-  ExchangeRate.setProvider(provider);
-  const contract = await ExchangeRate.deployed();
+async function updateOnNetwork(contractBuild, currentRate, timestamp) {
+  console.log(`[${contractBuild.chain}]`)
+  const contract = await contractBuild.deployed();
 
   const [storedRateInCents, lastUpdated] = (await Promise.all([
     contract.getExchangeRateInCents(),
@@ -59,7 +58,10 @@ async function updateOnNetwork(provider, currentRate, timestamp) {
     const newWeiPerCent = web3.utils.toBN(WEI).div(web3.utils.toBN(currentRateInCents));
 
     const owner = await contract.owner();
-    const { receipt } = await contract.setExchangeRate(newWeiPerCent, timestamp, { from: owner });
+    const { receipt } = await contract.setExchangeRate(newWeiPerCent, timestamp, {
+      from: owner,
+      nonce: await contractBuild.web3.eth.getTransactionCount(owner),
+    });
     console.log(`TX ${receipt.transactionHash} (block ${receipt.blockNumber})`);
   } else {
     console.log(`Skipping, $${currentRate} is ${difference}%, less than ${threshold}`)
