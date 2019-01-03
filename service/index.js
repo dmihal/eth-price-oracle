@@ -9,8 +9,14 @@ const config = require('../truffle-config');
 const WEI = '1000000000000000000';
 
 const ExchangeRate = contract(ExchangeRateBuild);
-//ExchangeRate.setProvider(config.networks.kovan.provider());
-ExchangeRate.setProvider(new Web3.providers.HttpProvider('http://localhost:8546'));
+
+const providers = Object.entries(config.networks)
+  .filter(([name, network]) => !network.develop)
+  .map(([name, network]) => {
+    const provider = network.provider();
+    provider.name = name;
+    return provider;
+  });
 
 const web3 = new Web3();
 
@@ -23,15 +29,28 @@ async function updateExchangeRate() {
   const response = await fetch('https://api.coinmarketcap.com/v1/ticker/ethereum/');
   const data = await response.json();
   const currentRate = parseFloat(data[0].price_usd);
-  const currentRateInCents = Math.round(currentRate * 100);
   const timestamp = data[0].last_updated;
 
+  for (provider of providers) {
+    try {
+      await updateOnNetwork(provider, currentRate, timestamp);
+    } catch (e) {
+      console.error(`Error running update on network ${provider.name}`, e);
+    }
+  }
+}
+
+async function updateOnNetwork(provider, currentRate, timestamp) {
+  console.log(`[${provider.name}]`)
+  ExchangeRate.setProvider(provider);
   const contract = await ExchangeRate.deployed();
+
   const [storedRateInCents, lastUpdated] = (await Promise.all([
     contract.getExchangeRateInCents(),
     contract.lastUpdated(),
   ])).map(bn => bn.toNumber());
 
+  const currentRateInCents = Math.round(currentRate * 100);
   const difference = percentDiff(currentRateInCents, storedRateInCents);
   const threshold = getThreshold(timestamp, lastUpdated);
 
